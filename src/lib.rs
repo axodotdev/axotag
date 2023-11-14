@@ -17,12 +17,20 @@ pub mod errors;
 pub struct PartialAnnouncementTag {
     /// The full tag
     pub tag: String,
-    /// The version we're announcing (if doing a unified version announcement)
-    pub version: Option<Version>,
-    /// The package we're announcing (if doing a single-package announcement)
-    pub package: Option<PackageIdx>,
+    /// The release
+    pub release: ReleaseType,
     /// whether we're prereleasing
     pub prerelease: bool,
+}
+
+/// which type of release we're announcing
+pub enum ReleaseType {
+    /// none
+    None,
+    /// unified release
+    Version(Version),
+    /// package
+    Package(PackageIdx),
 }
 
 /// Do the actual parsing logic for a tag
@@ -117,11 +125,18 @@ pub fn parse_tag(
         });
     }
 
+    let release = if let Some(version) = announcing_version {
+        ReleaseType::Version(version)
+    } else if let Some(package) = announcing_package {
+        ReleaseType::Package(package)
+    } else {
+        ReleaseType::None
+    };
+
     Ok(PartialAnnouncementTag {
         tag: announcement_tag,
         prerelease: announcing_prerelease,
-        version: announcing_version,
-        package: announcing_package,
+        release,
     })
 }
 
