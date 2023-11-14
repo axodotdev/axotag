@@ -1,4 +1,9 @@
+#![deny(missing_docs)]
 #![allow(clippy::result_large_err)]
+
+//! # axotag
+//!
+//! This library contains tag-parsing code for use with cargo-dist.
 
 use std::collections::BTreeMap;
 

@@ -1,9 +1,12 @@
+//! This module contains axotag's custom errors.
+
 use miette::Diagnostic;
 use thiserror::Error;
 
 /// An alias for the Result type for this crate
 pub type TagResult<T> = std::result::Result<T, TagError>;
 
+/// Errors axotag can have
 #[derive(Debug, Error, Diagnostic)]
 pub enum TagError {
     /// parse_tag concluded that versions didn't line up
