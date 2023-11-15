@@ -5,11 +5,18 @@
 //!
 //! This library contains tag-parsing code for use with cargo-dist.
 
-use axoproject::PackageInfo;
 use errors::{TagError, TagResult};
 use semver::Version;
 
 pub mod errors;
+
+/// Represents an opaque package.
+pub struct Package {
+    /// The package's name
+    pub name: String,
+    /// The package's version, if specified
+    pub version: Option<Version>,
+}
 
 /// details on what we're announcing (partially computed)
 pub struct PartialAnnouncementTag {
@@ -36,7 +43,7 @@ pub enum ReleaseType {
 /// If `tag` is None, then we had no --tag to parse, and need to do inference.
 /// The return value is then essentially a default/empty PartialAnnouncementTag
 /// which later passes will fill in.
-pub fn parse_tag(packages: &[&PackageInfo], tag: &str) -> TagResult<PartialAnnouncementTag> {
+pub fn parse_tag(packages: &[&Package], tag: &str) -> TagResult<PartialAnnouncementTag> {
     // First thing's first: if they gave us an announcement tag then we should try to parse it
     let mut announcing_package = None;
     let mut announcing_version = None;
@@ -89,7 +96,7 @@ pub fn parse_tag(packages: &[&PackageInfo], tag: &str) -> TagResult<PartialAnnou
             if let Some(pkg_idx) = announcing_package {
                 if let Some(package) = packages.get(pkg_idx) {
                     if let Some(real_version) = &package.version {
-                        if real_version.cargo() != &version {
+                        if real_version != &version {
                             return Err(TagError::ContradictoryTagVersion {
                                 tag: tag.to_owned(),
                                 package_name: package.name.clone(),
@@ -141,7 +148,7 @@ pub fn parse_tag(packages: &[&PackageInfo], tag: &str) -> TagResult<PartialAnnou
 /// If a match is found, then the return value is:
 /// * the idx of the package
 /// * the rest of the input
-fn strip_prefix_package<'a>(input: &'a str, packages: &[&PackageInfo]) -> Option<(usize, &'a str)> {
+fn strip_prefix_package<'a>(input: &'a str, packages: &[&Package]) -> Option<(usize, &'a str)> {
     let mut result: Option<(usize, &'a str)> = None;
     for (pkg_id, package) in packages.iter().enumerate() {
         if let Some(rest) = input.strip_prefix(&package.name) {

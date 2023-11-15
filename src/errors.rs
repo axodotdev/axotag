@@ -19,7 +19,7 @@ pub enum TagError {
         /// The version the tag claimed
         tag_version: semver::Version,
         /// The version the package actually has
-        real_version: axoproject::Version,
+        real_version: semver::Version,
     },
 
     /// parse_tag couldn't parse the version component at all
