@@ -28,6 +28,17 @@ pub struct PartialAnnouncementTag {
     pub prerelease: bool,
 }
 
+impl Default for PartialAnnouncementTag {
+    /// Constructs an empty PartialAnnouncementTag
+    fn default() -> PartialAnnouncementTag {
+        PartialAnnouncementTag {
+            tag: String::new(),
+            release: ReleaseType::None,
+            prerelease: false,
+        }
+    }
+}
+
 /// which type of release we're announcing
 pub enum ReleaseType {
     /// none
