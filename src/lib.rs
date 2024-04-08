@@ -6,9 +6,12 @@
 //! This library contains tag-parsing code for use with cargo-dist.
 
 use errors::{TagError, TagResult};
-use semver::Version;
+pub use semver;
+pub use semver::Version;
 
 pub mod errors;
+#[cfg(test)]
+mod tests;
 
 /// Represents an opaque package.
 pub struct Package {
@@ -40,13 +43,19 @@ impl Default for PartialAnnouncementTag {
 }
 
 /// which type of release we're announcing
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ReleaseType {
     /// none
     None,
     /// unified release
     Version(Version),
     /// package
-    Package(usize),
+    Package {
+        /// The index of the package from the passed in list
+        idx: usize,
+        /// The version of the package (in case the package didn't yet have one)
+        version: Version,
+    },
 }
 
 /// Do the actual parsing logic for a tag
@@ -57,7 +66,7 @@ pub enum ReleaseType {
 pub fn parse_tag(packages: &[Package], tag: &str) -> TagResult<PartialAnnouncementTag> {
     // First thing's first: if they gave us an announcement tag then we should try to parse it
     let mut announcing_package = None;
-    let mut announcing_version = None;
+    let announcing_version;
     let announcing_prerelease;
     let announcement_tag = tag.to_owned();
     let mut tag_suffix;
@@ -102,25 +111,22 @@ pub fn parse_tag(packages: &[Package], tag: &str) -> TagResult<PartialAnnounceme
         Ok(version) => {
             // Register whether we're announcing a prerelease
             announcing_prerelease = !version.pre.is_empty();
+            announcing_version = version;
 
             // If there's an announcing package, validate that the version matches
             if let Some(pkg_idx) = announcing_package {
                 if let Some(package) = packages.get(pkg_idx) {
                     if let Some(real_version) = &package.version {
-                        if real_version != &version {
+                        if real_version != &announcing_version {
                             return Err(TagError::ContradictoryTagVersion {
                                 tag: tag.to_owned(),
                                 package_name: package.name.clone(),
-                                tag_version: version,
+                                tag_version: announcing_version,
                                 real_version: real_version.clone(),
                             });
                         }
                     }
                 }
-            } else {
-                // We had no announcing_package, so looks like we're doing a unified release.
-                // Set this value to indicate that.
-                announcing_version = Some(version);
             }
         }
         Err(e) => {
@@ -131,19 +137,13 @@ pub fn parse_tag(packages: &[Package], tag: &str) -> TagResult<PartialAnnounceme
         }
     }
 
-    // If none of the approaches work, refuse to proceed
-    if announcing_package.is_none() && announcing_version.is_none() {
-        return Err(TagError::NoTagMatch {
-            tag: tag.to_owned(),
-        });
-    }
-
-    let release = if let Some(version) = announcing_version {
-        ReleaseType::Version(version)
-    } else if let Some(package) = announcing_package {
-        ReleaseType::Package(package)
+    let release = if let Some(idx) = announcing_package {
+        ReleaseType::Package {
+            idx,
+            version: announcing_version,
+        }
     } else {
-        ReleaseType::None
+        ReleaseType::Version(announcing_version)
     };
 
     Ok(PartialAnnouncementTag {
