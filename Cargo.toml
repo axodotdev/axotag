@@ -12,4 +12,4 @@ readme = "README.md"
 [dependencies]
 miette = "7.0.0"
 semver = "1.0.14"
-thiserror = "1.0.35"
+thiserror = "1.0.59"
